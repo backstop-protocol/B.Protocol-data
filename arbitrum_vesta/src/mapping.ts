@@ -12,6 +12,17 @@ const gOHM_sp = "0x6e53D20d674C27b858a005Cf4A72CFAaf4434ECB".toLowerCase()
 const address_zero = "0x0000000000000000000000000000000000000000"
 const gOHM = "0x8D9bA570D6cb60C7e3e0F31343Efe75AB8E65FB1".toLowerCase()
 
+function getBamm (id: string): Bamm {
+  let bamm = Bamm.load(id)
+  if(!bamm){
+    bamm = new Bamm(id)
+    bamm.TVL = BigInt.fromString("0")
+    bamm.totalLiquidations = BigInt.fromString("0")
+    bamm.collateralImbalance = BigInt.fromString("0")
+  }
+  return bamm
+}
+
 function checkForBammDepositWithdraw (event: Transfer, bammAddress: string, spAddress: string): void {
   const src = event.params.from.toHexString().toLowerCase()
   const dst = event.params.to.toHexString().toLowerCase()
@@ -27,12 +38,7 @@ function checkForBammDepositWithdraw (event: Transfer, bammAddress: string, spAd
   balanceChange.blockNumber = event.block.number
   balanceChange.amount = event.params.value
   balanceChange.txHash = event.transaction.hash.toHexString()
-  let bamm = Bamm.load(bammAddress)
-  if(!bamm){
-    bamm = new Bamm(bammAddress)
-    bamm.TVL = BigInt.fromString("0")
-    bamm.totalLiquidations = BigInt.fromString("0")
-  }
+  let bamm = getBamm(bammAddress)
 
   if(deposit){
     balanceChange.type = "deposit"
@@ -125,12 +131,7 @@ function tryToSubtractLiquidationFromBamm(event: ethereum.Event, liq: Liquidatio
   balanceChange.txHash = event.transaction.hash.toHexString()
   balanceChange.type = "liquidation"
   balanceChange.save()
-  let bamm = Bamm.load(liq.bammId)
-  if(!bamm){
-    bamm = new Bamm(liq.bammId)
-    bamm.TVL = BigInt.fromString("0")
-    bamm.totalLiquidations = BigInt.fromString("0")
-  }
+  let bamm = getBamm(liq.bammId)
   bamm.TVL = bamm.TVL.minus(balanceChange.amount)
   bamm.totalLiquidations = bamm.totalLiquidations.plus(balanceChange.amount)
   bamm.save()
@@ -167,11 +168,7 @@ export function handleCollateralTransfer(event: Transfer): void {
   if(!liquidation && !deposit && !withdrawOrRebalance){
     return // exit nothing to do
   }
-  let bamm = Bamm.load(arbitrum_vesta_gOHM_bamm)
-  if(!bamm){
-    bamm = new Bamm(arbitrum_vesta_gOHM_bamm)
-  }
-  bamm.collateralImbalance = bamm.collateralImbalance || BigInt.fromString("0")
+  let bamm = getBamm(arbitrum_vesta_gOHM_bamm)
   if(liquidation || deposit){
     bamm.collateralImbalance = bamm.collateralImbalance.plus(event.params.value)
   }else if (withdrawOrRebalance){
