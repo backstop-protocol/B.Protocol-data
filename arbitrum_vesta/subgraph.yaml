@@ -28,6 +28,29 @@ dataSources:
       file: ./src/mapping.ts
 
   - kind: ethereum
+    name: gOHM
+    network: arbitrum-one
+    source:
+      address: "0x8D9bA570D6cb60C7e3e0F31343Efe75AB8E65FB1"
+      abi: gOHM
+      startBlock: 3311260
+    mapping:
+      kind: ethereum/events
+      apiVersion: 0.0.5
+      language: wasm/assemblyscript
+      entities:
+        - Bamm
+        - ImbalanceChange
+      abis:
+        - name: gOHM
+          file: ./abis/gOHM.json
+      eventHandlers:
+        - event: Transfer(indexed address,indexed address,uint256)
+          handler: handleCollateralTransfer
+
+      file: ./src/mapping.ts
+
+  - kind: ethereum
     name: troveManager
     network: arbitrum-one
     source:

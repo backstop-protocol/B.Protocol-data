@@ -5,7 +5,7 @@ import {
 import {
   Liquidation
 } from "../generated/troveManager/troveManager"
-import { Bamm, StabilityPool, LiquidationEvent, BalanceChange } from "../generated/schema"
+import { Bamm, StabilityPool, LiquidationEvent, BalanceChange, ImbalanceChange } from "../generated/schema"
 
 const arbitrum_vesta_gOHM_bamm = "0xebf8252756268091e523e57D293c0522B8aFe66b".toLowerCase()
 const gOHM_sp = "0x6e53D20d674C27b858a005Cf4A72CFAaf4434ECB".toLowerCase()
@@ -142,7 +142,6 @@ export function handleTransfer(event: Transfer): void {
   checkForSpTransfers(event, gOHM_sp) // sp tvl
 }
 
-
 export function handleLiquidation(event: Liquidation): void {
   if(event.params._asset.toHexString() != gOHM){
     return // exit
@@ -156,4 +155,27 @@ export function handleLiquidation(event: Liquidation): void {
   liq.collateralAmount = event.params._liquidatedColl
   liq.save()
   tryToSubtractLiquidationFromBamm(event, liq)
+}
+
+export function handleCollateralTransfer(event: Transfer): void {
+  // if its not a transfer in or out of the bamm exit
+  const src = event.params.from.toHexString().toLowerCase()
+  const dst = event.params.to.toHexString().toLowerCase()
+  const liquidation = (dst == arbitrum_vesta_gOHM_bamm && src == gOHM_sp)
+  const deposit = (dst == arbitrum_vesta_gOHM_bamm && src != gOHM_sp)
+  const withdrawOrRebalance = (src == arbitrum_vesta_gOHM_bamm)
+  if(!liquidation && !deposit && !withdrawOrRebalance){
+    return // exit nothing to do
+  }
+  let bamm = Bamm.load(arbitrum_vesta_gOHM_bamm)
+  if(!bamm){
+    bamm = new Bamm(arbitrum_vesta_gOHM_bamm)
+  }
+  bamm.collateralImbalance = bamm.collateralImbalance || BigInt.fromString("0")
+  if(liquidation || deposit){
+    bamm.collateralImbalance = bamm.collateralImbalance.plus(event.params.value)
+  }else if (withdrawOrRebalance){
+    bamm.collateralImbalance = bamm.collateralImbalance.minus(event.params.value)
+  }
+  bamm.save()
 }
