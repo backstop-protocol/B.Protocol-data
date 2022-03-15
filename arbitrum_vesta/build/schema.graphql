@@ -1,11 +1,13 @@
 type Bamm @entity {
   id: ID!
   TVL: BigInt!
+  totalLiquidations: BigInt!
 }
 
 type StabilityPool @entity {
   id: ID!
   TVL: BigInt!
+  totalLiquidations: BigInt!
 }
 
 type BalanceChange @entity {

@@ -10,7 +10,6 @@ import { Bamm, StabilityPool, LiquidationEvent, BalanceChange } from "../generat
 const arbitrum_vesta_gOHM_bamm = "0xebf8252756268091e523e57D293c0522B8aFe66b".toLowerCase()
 const gOHM_sp = "0x6e53D20d674C27b858a005Cf4A72CFAaf4434ECB".toLowerCase()
 const address_zero = "0x0000000000000000000000000000000000000000"
-
 const gOHM = "0x8D9bA570D6cb60C7e3e0F31343Efe75AB8E65FB1".toLowerCase()
 
 function checkForBammDepositWithdraw (event: Transfer, bammAddress: string, spAddress: string): void {
@@ -32,6 +31,7 @@ function checkForBammDepositWithdraw (event: Transfer, bammAddress: string, spAd
   if(!bamm){
     bamm = new Bamm(bammAddress)
     bamm.TVL = BigInt.fromString("0")
+    bamm.totalLiquidations = BigInt.fromString("0")
   }
 
   if(deposit){
@@ -59,6 +59,7 @@ function checkForSpTransfers (event: Transfer, spAddress: string): void {
   if(!sp){
     sp = new StabilityPool(spAddress)
     sp.TVL = BigInt.fromString("0")
+    sp.totalLiquidations = BigInt.fromString("0")
   }
   if(deposit){
     sp.TVL = sp.TVL.plus(event.params.value)
@@ -105,6 +106,17 @@ function tryToSubtractLiquidationFromBamm(event: ethereum.Event, liq: Liquidatio
   if(!liq.bammTvl || !liq.debtAmount){
     return //exit
   }
+  // sp total liquidations
+  let sp = StabilityPool.load(liq.spId)
+  if(!sp){
+    sp = new StabilityPool(liq.spId)
+    sp.TVL = BigInt.fromString("0")
+    sp.totalLiquidations = BigInt.fromString("0")
+  }
+  sp.totalLiquidations = sp.totalLiquidations.plus(liq.debtAmount)
+  sp.save
+  
+  // bamm total liquidations 
   const bammLiqSize = liq.debtAmount.times(liq.bammTvl).div(liq.spTvl)
 
   const balanceChange = new BalanceChange(`${event.block.number.toString()}_${event.transactionLogIndex.toString()}_${event.logIndex.toString()}`)
@@ -117,8 +129,10 @@ function tryToSubtractLiquidationFromBamm(event: ethereum.Event, liq: Liquidatio
   if(!bamm){
     bamm = new Bamm(liq.bammId)
     bamm.TVL = BigInt.fromString("0")
+    bamm.totalLiquidations = BigInt.fromString("0")
   }
   bamm.TVL = bamm.TVL.minus(balanceChange.amount)
+  bamm.totalLiquidations = bamm.totalLiquidations.plus(balanceChange.amount)
   bamm.save()
 }
 

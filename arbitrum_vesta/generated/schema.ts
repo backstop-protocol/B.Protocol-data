@@ -17,6 +17,7 @@ export class Bamm extends Entity {
     this.set("id", Value.fromString(id));
 
     this.set("TVL", Value.fromBigInt(BigInt.zero()));
+    this.set("totalLiquidations", Value.fromBigInt(BigInt.zero()));
   }
 
   save(): void {
@@ -53,6 +54,15 @@ export class Bamm extends Entity {
   set TVL(value: BigInt) {
     this.set("TVL", Value.fromBigInt(value));
   }
+
+  get totalLiquidations(): BigInt {
+    let value = this.get("totalLiquidations");
+    return value!.toBigInt();
+  }
+
+  set totalLiquidations(value: BigInt) {
+    this.set("totalLiquidations", Value.fromBigInt(value));
+  }
 }
 
 export class StabilityPool extends Entity {
@@ -61,6 +71,7 @@ export class StabilityPool extends Entity {
     this.set("id", Value.fromString(id));
 
     this.set("TVL", Value.fromBigInt(BigInt.zero()));
+    this.set("totalLiquidations", Value.fromBigInt(BigInt.zero()));
   }
 
   save(): void {
@@ -96,6 +107,15 @@ export class StabilityPool extends Entity {
 
   set TVL(value: BigInt) {
     this.set("TVL", Value.fromBigInt(value));
+  }
+
+  get totalLiquidations(): BigInt {
+    let value = this.get("totalLiquidations");
+    return value!.toBigInt();
+  }
+
+  set totalLiquidations(value: BigInt) {
+    this.set("totalLiquidations", Value.fromBigInt(value));
   }
 }
 

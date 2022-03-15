@@ -3,6 +3,7 @@ description: arbitrum vesta bamm
 schema:
   file: ./schema.graphql
 dataSources:
+
   - kind: ethereum
     name: VST
     network: arbitrum-one
