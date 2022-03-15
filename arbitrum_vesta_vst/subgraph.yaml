@@ -1,0 +1,50 @@
+specVersion: 0.0.2
+description: arbitrum vesta bamm
+schema:
+  file: ./schema.graphql
+dataSources:
+  - kind: ethereum
+    name: VST
+    network: arbitrum-one
+    source:
+      address: "0x64343594Ab9b56e99087BfA6F2335Db24c2d1F17"
+      abi: VST
+      startBlock: 5559264
+    mapping:
+      kind: ethereum/events
+      apiVersion: 0.0.5
+      language: wasm/assemblyscript
+      entities:
+        - Bamm
+        - BalanceChange
+      abis:
+        - name: VST
+          file: ./abis/VST.json
+      eventHandlers:
+        - event: Transfer(indexed address,indexed address,uint256)
+          handler: handleTransfer
+
+      file: ./src/mapping.ts
+
+  - kind: ethereum
+    name: troveManager
+    network: arbitrum-one
+    source:
+      address: "0x100EC08129e0FD59959df93a8b914944A3BbD5df"
+      abi: troveManager
+      startBlock: 5559178
+    mapping:
+      kind: ethereum/events
+      apiVersion: 0.0.5
+      language: wasm/assemblyscript
+      entities:
+        - Bamm
+        - BalanceChange
+      abis:
+        - name: troveManager
+          file: ./abis/troveManager.json
+      eventHandlers:
+        - event: Liquidation(indexed address,uint256,uint256,uint256,uint256)
+          handler: handleLiquidation
+        
+      file: ./src/mapping.ts
