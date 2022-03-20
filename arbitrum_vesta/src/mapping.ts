@@ -3,14 +3,22 @@ import {
   Transfer
 } from "../generated/VST/VST"
 import {
+  Transfer as TransferBAMM, RebalanceSwap
+} from "../generated/BAMM/BAMM" 
+import {
   Liquidation
 } from "../generated/troveManager/troveManager"
-import { Bamm, StabilityPool, LiquidationEvent, BalanceChange, ImbalanceChange } from "../generated/schema"
+import {
+  Swap
+} from "../generated/UniswapV2Pair/UniswapV2Pair"
+import { Bamm, StabilityPool, LiquidationEvent, TokenSushiTrade, HistoricalBAMMVestaData } from "../generated/schema"
+
 
 const arbitrum_vesta_gOHM_bamm = "0xebf8252756268091e523e57D293c0522B8aFe66b".toLowerCase()
 const gOHM_sp = "0x6e53D20d674C27b858a005Cf4A72CFAaf4434ECB".toLowerCase()
 const address_zero = "0x0000000000000000000000000000000000000000"
 const gOHM = "0x8D9bA570D6cb60C7e3e0F31343Efe75AB8E65FB1".toLowerCase()
+const _1e18 = BigInt.fromString("1000000000000000000")
 
 function getBamm (id: string): Bamm {
   let bamm = Bamm.load(id)
@@ -34,23 +42,18 @@ function checkForBammDepositWithdraw (event: Transfer, bammAddress: string, spAd
   if(!deposit && !withdraw){
     return // exit
   }
-  let balanceChange = new BalanceChange(`${event.block.number.toString()}_${event.transactionLogIndex.toString()}_${event.logIndex.toString()}`)
-  balanceChange.blockNumber = event.block.number
-  balanceChange.amount = event.params.value
-  balanceChange.txHash = event.transaction.hash.toHexString()
+
   let bamm = getBamm(bammAddress)
 
   if(deposit){
-    balanceChange.type = "deposit"
-    bamm.TVL = bamm.TVL.plus(balanceChange.amount)
+    bamm.TVL = bamm.TVL.plus(event.params.value)
   }
   if(withdraw){
-    balanceChange.type = "withdraw"
-    bamm.TVL = bamm.TVL.minus(balanceChange.amount)
+    bamm.TVL = bamm.TVL.minus(event.params.value)
   }
 
-  balanceChange.save()
   bamm.save()
+  updateHourlyData(event)
 }
 
 function checkForSpTransfers (event: Transfer, spAddress: string): void {
@@ -75,7 +78,7 @@ function checkForSpTransfers (event: Transfer, spAddress: string): void {
   }
 
   sp.save()
-  
+  updateHourlyData(event)
 }
 
 function checkForSpLiquidation (event: Transfer, bammAddress: string, spAddress: string) : void {
@@ -120,24 +123,22 @@ function tryToSubtractLiquidationFromBamm(event: ethereum.Event, liq: Liquidatio
     sp.totalLiquidations = BigInt.fromString("0")
   }
   sp.totalLiquidations = sp.totalLiquidations.plus(liq.debtAmount)
-  sp.save
+  sp.save()
   
   // bamm total liquidations 
   const bammLiqSize = liq.debtAmount.times(liq.bammTvl).div(liq.spTvl)
+  const bammImbSize = liq.collateralAmount.times(liq.bammTvl).div(liq.spTvl)
 
-  const balanceChange = new BalanceChange(`${event.block.number.toString()}_${event.transactionLogIndex.toString()}_${event.logIndex.toString()}`)
-  balanceChange.blockNumber = event.block.number
-  balanceChange.amount = bammLiqSize
-  balanceChange.txHash = event.transaction.hash.toHexString()
-  balanceChange.type = "liquidation"
-  balanceChange.save()
   let bamm = getBamm(liq.bammId)
-  bamm.TVL = bamm.TVL.minus(balanceChange.amount)
-  bamm.totalLiquidations = bamm.totalLiquidations.plus(balanceChange.amount)
+  bamm.TVL = bamm.TVL.minus(bammLiqSize)
+  bamm.totalLiquidations = bamm.totalLiquidations.plus(bammLiqSize)
+  bamm.collateralImbalance = bamm.collateralImbalance.plus(bammImbSize)
   bamm.save()
+  updateHourlyData(event)
 }
 
 export function handleTransfer(event: Transfer): void {
+  log.debug('test 123',[])  
   checkForSpLiquidation(event, arbitrum_vesta_gOHM_bamm, gOHM_sp) // requires TVL state prior to transfer
   checkForBammDepositWithdraw(event, arbitrum_vesta_gOHM_bamm, gOHM_sp) // bamm tvl
   checkForSpTransfers(event, gOHM_sp) // sp tvl
@@ -158,21 +159,95 @@ export function handleLiquidation(event: Liquidation): void {
   tryToSubtractLiquidationFromBamm(event, liq)
 }
 
-export function handleCollateralTransfer(event: Transfer): void {
-  // if its not a transfer in or out of the bamm exit
-  const src = event.params.from.toHexString().toLowerCase()
-  const dst = event.params.to.toHexString().toLowerCase()
-  const liquidation = (dst == arbitrum_vesta_gOHM_bamm && src == gOHM_sp)
-  const deposit = (dst == arbitrum_vesta_gOHM_bamm && src != gOHM_sp)
-  const withdrawOrRebalance = (src == arbitrum_vesta_gOHM_bamm)
-  if(!liquidation && !deposit && !withdrawOrRebalance){
-    return // exit nothing to do
+
+
+function getTokenSushiTrade (id: string): TokenSushiTrade {
+  let tokenSushiTrade = TokenSushiTrade.load(id)
+  if(!tokenSushiTrade){
+    tokenSushiTrade = new TokenSushiTrade(id)
+    tokenSushiTrade.token2EthPrice = BigInt.fromString("0")
+    tokenSushiTrade.token2UsdPrice = BigInt.fromString("0")
   }
-  let bamm = getBamm(arbitrum_vesta_gOHM_bamm)
-  if(liquidation || deposit){
-    bamm.collateralImbalance = bamm.collateralImbalance.plus(event.params.value)
-  }else if (withdrawOrRebalance){
-    bamm.collateralImbalance = bamm.collateralImbalance.minus(event.params.value)
+  return tokenSushiTrade
+}
+
+export function handlegOHMSushiTrade(event: Swap): void {
+  const ethAmount = event.params.amount0In.plus(event.params.amount0Out)
+  const gOhmAmount = event.params.amount1In.plus(event.params.amount1Out)
+  const price = gOhmAmount.times(_1e18).div(ethAmount)
+
+  const tokenSushiTrade = getTokenSushiTrade(gOHM)
+  tokenSushiTrade.token2EthPrice = price
+  tokenSushiTrade.save()
+  updateHourlyData(event)
+}
+
+export function handlegDAISushiTrade(event: Swap): void {
+  const ethAmount = event.params.amount0In.plus(event.params.amount0Out)
+  const daiAmount = event.params.amount1In.plus(event.params.amount1Out)
+
+  const tokenSushiTrade = getTokenSushiTrade(gOHM)
+
+  tokenSushiTrade.token2UsdPrice = daiAmount.times(tokenSushiTrade.token2EthPrice).div(ethAmount)
+
+
+  tokenSushiTrade.save()
+  updateHourlyData(event)
+}
+
+export function handleBAMMTokenTransfer(event: TransferBAMM): void {
+  const bamm = getBamm(arbitrum_vesta_gOHM_bamm)
+  const currentSupply = bamm.bammSupply
+  const value = event.params._value
+  if(event.params._from.toString() == address_zero) {
+    // mint
+    bamm.bammSupply = currentSupply.plus(value)
   }
+  if(event.params._to.toString() == address_zero) {
+    // burn
+    // update imbalance
+    let imbalance = bamm.collateralImbalance
+    imbalance = imbalance.times(currentSupply.minus(value)).div(currentSupply)
+
+    bamm.collateralImbalance = imbalance
+    bamm.bammSupply = currentSupply.minus(value)
+  }
+
   bamm.save()
+  updateHourlyData(event)
+}
+
+export function handleRebalanceSwap(event: RebalanceSwap): void {
+  const bamm = getBamm(arbitrum_vesta_gOHM_bamm)
+  bamm.collateralImbalance = bamm.collateralImbalance.minus(event.params.ethAmount)
+  bamm.save()
+
+  updateHourlyData(event)
+}
+
+function updateHourlyData(event: ethereum.Event): void {
+  const timestamp = event.block.timestamp.toI32()
+  const timeId = timestamp / (60 * 60)
+
+  let historicalBAMMVestaData = HistoricalBAMMVestaData.load(timeId.toString())
+  if(!historicalBAMMVestaData){
+    historicalBAMMVestaData = new HistoricalBAMMVestaData(timeId.toString())
+  }
+
+  const bamm = getBamm(arbitrum_vesta_gOHM_bamm)
+  const sushiTrade = getTokenSushiTrade(gOHM)
+
+  historicalBAMMVestaData.gohmLiquidations = bamm.totalLiquidations
+
+  const bammLUSD = bamm.TVL
+  const bammCollateral = bamm.collateralImbalance
+  const bammCollateralInUSD = bammCollateral.times(sushiTrade.token2UsdPrice).div(_1e18)
+
+  historicalBAMMVestaData.gohmUSDTVL = bammCollateralInUSD.plus(bammLUSD)
+  historicalBAMMVestaData.gohmCollateralUSD = bammCollateralInUSD
+  if(bamm.bammSupply.gt(BigInt.fromI32(0))) {
+    historicalBAMMVestaData.gohmLPTokenValue = historicalBAMMVestaData.gohmUSDTVL.times(_1e18).div(bamm.bammSupply)
+  }
+
+  historicalBAMMVestaData.save()
 }

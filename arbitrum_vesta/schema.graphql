@@ -3,28 +3,13 @@ type Bamm @entity {
   TVL: BigInt!
   totalLiquidations: BigInt!
   collateralImbalance: BigInt!
+  bammSupply: BigInt!
 }
 
 type StabilityPool @entity {
   id: ID!
   TVL: BigInt!
   totalLiquidations: BigInt!
-}
-
-type BalanceChange @entity {
-  id: ID!
-  amount: BigInt!
-  type: String!
-  txHash: String!
-  blockNumber: BigInt!
-}
-
-type ImbalanceChange @entity {
-  id: ID!
-  amount: BigInt!
-  type: String!
-  txHash: String!
-  blockNumber: BigInt!
 }
 
 type LiquidationEvent @entity {
@@ -37,4 +22,18 @@ type LiquidationEvent @entity {
   bammTvl: BigInt!
   spId: String!
   spTvl: BigInt!
+}
+
+type TokenSushiTrade @entity {
+  id: ID!
+  token2EthPrice: BigInt!
+  token2UsdPrice: BigInt!
+}
+
+type HistoricalBAMMVestaData @entity {
+  id: ID!
+  gohmLiquidations: BigInt!
+  gohmUSDTVL: BigInt!
+  gohmCollateralUSD: BigInt!
+  gohmLPTokenValue: BigInt!
 }
