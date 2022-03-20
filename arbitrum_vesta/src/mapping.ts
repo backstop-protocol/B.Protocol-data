@@ -27,6 +27,7 @@ function getBamm (id: string): Bamm {
     bamm.TVL = BigInt.fromString("0")
     bamm.totalLiquidations = BigInt.fromString("0")
     bamm.collateralImbalance = BigInt.fromString("0")
+    bamm.bammSupply = BigInt.fromString("0")
   }
   return bamm
 }
@@ -199,11 +200,11 @@ export function handleBAMMTokenTransfer(event: TransferBAMM): void {
   const bamm = getBamm(arbitrum_vesta_gOHM_bamm)
   const currentSupply = bamm.bammSupply
   const value = event.params._value
-  if(event.params._from.toString() == address_zero) {
+  if(event.params._from.toHexString() == address_zero) {
     // mint
     bamm.bammSupply = currentSupply.plus(value)
   }
-  if(event.params._to.toString() == address_zero) {
+  if(event.params._to.toHexString() == address_zero) {
     // burn
     // update imbalance
     let imbalance = bamm.collateralImbalance
