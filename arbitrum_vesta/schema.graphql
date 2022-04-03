@@ -37,4 +37,5 @@ type LiquidationEvent @entity {
   bammTvl: BigInt!
   spId: String!
   spTvl: BigInt!
+
 }

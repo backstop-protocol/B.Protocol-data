@@ -16,13 +16,12 @@ type LiquidationEvent @entity {
   id: ID!
   debtAmount: BigInt!
   collateralAmount: BigInt!
+  txHash: String!
   blockNumber: BigInt!
   bammId: String!
   bammTvl: BigInt!
   spId: String!
   spTvl: BigInt!
-
-  date: BigInt!
 }
 
 type TokenSushiTrade @entity {
@@ -31,10 +30,10 @@ type TokenSushiTrade @entity {
   token2UsdPrice: BigInt!
 }
 
-type BammHour @entity {
+type HistoricalBAMMVestaData @entity {
   id: ID!
-  liquidations: BigInt!
-  USDTVL: BigInt!
-  collateralUSD: BigInt!
-  LPTokenValue: BigInt!
+  gohmLiquidations: BigInt!
+  gohmUSDTVL: BigInt!
+  gohmCollateralUSD: BigInt!
+  gohmLPTokenValue: BigInt!
 }

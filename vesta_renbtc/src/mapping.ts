@@ -11,14 +11,15 @@ import {
 import {
   Swap
 } from "../generated/UniswapV2Pair/UniswapV2Pair"
-import { Bamm, StabilityPool, LiquidationEvent, TokenSushiTrade, BammHour } from "../generated/schema"
+import { Bamm, StabilityPool, LiquidationEvent, TokenSushiTrade, HistoricalBAMMVestaData } from "../generated/schema"
 
 
-const arbitrum_vesta_gOHM_bamm = "0xebf8252756268091e523e57D293c0522B8aFe66b".toLowerCase()
-const gOHM_sp = "0x6e53D20d674C27b858a005Cf4A72CFAaf4434ECB".toLowerCase()
+const arbitrum_vesta_gOHM_bamm = "0x0a30963A461aa4eb4252b5a06525603E49034C41".toLowerCase()
+const gOHM_sp = "0x3282dfAf0fBba4d3E771C4E5F669Cb4E14D8adb0".toLowerCase()
 const address_zero = "0x0000000000000000000000000000000000000000"
-const gOHM = "0x8D9bA570D6cb60C7e3e0F31343Efe75AB8E65FB1".toLowerCase()
+const gOHM = "0xDBf31dF14B66535aF65AaC99C32e9eA844e14501".toLowerCase()
 const _1e18 = BigInt.fromString("1000000000000000000")
+const _1e10 = BigInt.fromString("10000000000")
 
 function getBamm (id: string): Bamm {
   let bamm = Bamm.load(id)
@@ -95,7 +96,6 @@ function checkForSpLiquidation (event: Transfer, bammAddress: string, spAddress:
   if(!liq){
     liq = new LiquidationEvent(txHash)
   }
-  liq.date = event.block.timestamp
   liq.spId = spAddress
   const sp = StabilityPool.load(spAddress)
   if(!sp){
@@ -174,9 +174,9 @@ function getTokenSushiTrade (id: string): TokenSushiTrade {
 }
 
 export function handlegOHMSushiTrade(event: Swap): void {
-  const ethAmount = event.params.amount0In.plus(event.params.amount0Out)
-  const gOhmAmount = event.params.amount1In.plus(event.params.amount1Out)
-  const price = ethAmount.times(_1e18).div(gOhmAmount)
+  const renBTCAmount = event.params.amount0In.plus(event.params.amount0Out)
+  const ethAmount = event.params.amount1In.plus(event.params.amount1Out)
+  const price = ethAmount.times(_1e18).div(renBTCAmount)
 
   const tokenSushiTrade = getTokenSushiTrade(gOHM)
   tokenSushiTrade.token2EthPrice = price
@@ -231,25 +231,25 @@ function updateHourlyData(event: ethereum.Event): void {
   const timestamp = event.block.timestamp.toI32()
   const timeId = timestamp / (60 * 60)
 
-  let bammHour = BammHour.load(timeId.toString())
-  if(!bammHour){
-    bammHour = new BammHour(timeId.toString())
+  let historicalBAMMVestaData = HistoricalBAMMVestaData.load(timeId.toString())
+  if(!historicalBAMMVestaData){
+    historicalBAMMVestaData = new HistoricalBAMMVestaData(timeId.toString())
   }
 
   const bamm = getBamm(arbitrum_vesta_gOHM_bamm)
   const sushiTrade = getTokenSushiTrade(gOHM)
 
-  bammHour.liquidations = bamm.totalLiquidations
+  historicalBAMMVestaData.gohmLiquidations = bamm.totalLiquidations
 
   const bammLUSD = bamm.TVL
   const bammCollateral = bamm.collateralImbalance
   const bammCollateralInUSD = bammCollateral.times(sushiTrade.token2UsdPrice).div(_1e18)
 
-  bammHour.USDTVL = bammCollateralInUSD.plus(bammLUSD)
-  bammHour.collateralUSD = bammCollateralInUSD
+  historicalBAMMVestaData.gohmUSDTVL = bammCollateralInUSD.plus(bammLUSD)
+  historicalBAMMVestaData.gohmCollateralUSD = bammCollateralInUSD
   if(bamm.bammSupply.gt(BigInt.fromI32(0))) {
-    bammHour.LPTokenValue = bammHour.USDTVL.times(_1e18).div(bamm.bammSupply)
+    historicalBAMMVestaData.gohmLPTokenValue = historicalBAMMVestaData.gohmUSDTVL.times(_1e18).div(bamm.bammSupply)
   }
 
-  bammHour.save()
+  historicalBAMMVestaData.save()
 }
