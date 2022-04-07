@@ -1,0 +1,24 @@
+type Bamm @entity {
+  id: ID!
+  deposits: BigInt!
+  totalLiquidations: BigInt!
+  bammSupply: BigInt!
+}
+
+type LiquidationEvent @entity {
+  id: ID!
+  debtAmount: BigInt!
+  collateralAmount: BigInt!
+  txHash: String!
+  blockNumber: BigInt!
+
+  date: BigInt!
+}
+
+type BammHour @entity {
+  id: ID!
+  liquidations: BigInt!
+  USDTVL: BigInt!
+  collateralUSD: BigInt!
+  LPTokenValue: BigInt!
+}

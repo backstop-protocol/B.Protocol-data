@@ -1,0 +1,35 @@
+specVersion: 0.0.2
+description: hundred bamm
+schema:
+  file: ./schema.graphql
+dataSources:
+
+  - kind: ethereum
+    name: BAMM
+    network: fantom
+    source:
+      address: "0xEDC7905a491fF335685e2F2F1552541705138A3D"
+      abi: BAMM
+      startBlock: 27076323
+    mapping:
+      kind: ethereum/events
+      apiVersion: 0.0.5
+      language: wasm/assemblyscript
+      entities:
+        - Bamm
+        - LiquidationEvent
+      abis:
+        - name: BAMM
+          file: ./abis/BAMM.json
+      eventHandlers:
+        - event: UserDeposit(indexed address,uint256,uint256)
+          handler: handleDeposit
+        - event: UserWithdraw(indexed address,uint256,uint256)
+          handler: handleWithdraw
+        - event: RebalanceSwap(indexed address,uint256,address,uint256,uint256)
+          handler: handleRebalance
+      callHandlers:
+        - function: liquidateBorrow(address,uint256,address)
+          handler: handleLiquidationCall
+      file: ./src/mapping.ts
+
