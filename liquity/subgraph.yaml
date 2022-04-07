@@ -1,0 +1,97 @@
+specVersion: 0.0.2
+description: bprotocol liquity
+schema:
+  file: ./schema.graphql
+dataSources:
+
+  - kind: ethereum
+    name: VST
+    network: mainnet
+    source:
+      address: "0x5f98805A4E8be255a32880FDeC7F6728C6568bA0"
+      abi: VST
+      startBlock: 12178594
+    mapping:
+      kind: ethereum/events
+      apiVersion: 0.0.5
+      language: wasm/assemblyscript
+      entities:
+        - Bamm
+        - BalanceChange
+      abis:
+        - name: VST
+          file: ./abis/VST.json
+      eventHandlers:
+        - event: Transfer(indexed address,indexed address,uint256)
+          handler: handleTransfer
+
+      file: ./src/mapping.ts
+
+  - kind: ethereum
+    name: BAMM
+    network: mainnet
+    source:
+      address: "0x00FF66AB8699AAfa050EE5EF5041D1503aa0849a"
+      abi: BAMM
+      startBlock: 14067816
+    mapping:
+      kind: ethereum/events
+      apiVersion: 0.0.5
+      language: wasm/assemblyscript
+      entities:
+        - Bamm
+      abis:
+        - name: BAMM
+          file: ./abis/BAMM.json
+      eventHandlers:
+        - event: Transfer(indexed address,indexed address,uint256)
+          handler: handleBAMMTokenTransfer
+        - event: RebalanceSwap(indexed address,uint256,uint256,uint256)
+          handler: handleRebalanceSwap
+      file: ./src/mapping.ts
+
+
+  - kind: ethereum
+    name: troveManager
+    network: mainnet
+    source:
+      address: "0xA39739EF8b0231DbFA0DcdA07d7e29faAbCf4bb2"
+      abi: troveManager
+      startBlock: 12178557
+    mapping:
+      kind: ethereum/events
+      apiVersion: 0.0.5
+      language: wasm/assemblyscript
+      entities:
+        - Bamm
+        - BalanceChange
+      abis:
+        - name: troveManager
+          file: ./abis/troveManager.json
+      eventHandlers:
+        - event: Liquidation(uint256,uint256,uint256,uint256)
+          handler: handleLiquidation
+        
+      file: ./src/mapping.ts
+
+  - kind: ethereum
+    name: UniswapV2PairDAI
+    network: mainnet
+    source:
+      address: "0xC3D03e4F041Fd4cD388c549Ee2A29a9E5075882f"
+      abi: UniswapV2Pair
+      startBlock: 10829331
+    mapping:
+      kind: ethereum/events
+      apiVersion: 0.0.5
+      language: wasm/assemblyscript
+      entities:
+        - GOHMETHPrice
+      abis:
+        - name: UniswapV2Pair
+          file: ./abis/UniswapV2Pair.json
+      eventHandlers:
+        - event: Swap(indexed address,uint256,uint256,uint256,uint256,indexed address)
+          handler: handlegDAISushiTrade
+        
+      file: ./src/mapping.ts      

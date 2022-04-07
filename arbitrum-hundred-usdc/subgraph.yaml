@@ -1,0 +1,78 @@
+specVersion: 0.0.2
+description: arbitrum hundred bamm usdc
+schema:
+  file: ./schema.graphql
+dataSources: 
+
+  - kind: ethereum
+    name: BAMM
+    network: arbitrum-one
+    source:
+      address: "0x04208f296039f482810B550ae0d68c3E1A5EB719"
+      abi: BAMM
+      startBlock: 3207297 
+    mapping:
+      kind: ethereum/events
+      apiVersion: 0.0.5
+      language: wasm/assemblyscript
+      entities:
+        - Bamm
+        - LiquidationEvent
+      abis:
+        - name: BAMM
+          file: ./abis/BAMM.json
+      eventHandlers:
+        - event: UserDeposit(indexed address,uint256,uint256)
+          handler: handleDeposit
+        - event: UserWithdraw(indexed address,uint256,uint256,uint256)
+          handler: handleWithdraw
+        - event: RebalanceSwap(indexed address,uint256,uint256,uint256)
+          handler: handleRebalance
+      # callHandlers:
+      #   - function: liquidateBorrow(address,uint256,address)
+      #     handler: handleLiquidationCall
+      file: ./src/mapping.ts
+
+  - kind: ethereum
+    name: UniswapV2PairDAI
+    network: arbitrum-one
+    source:
+      address: "0x692a0B300366D1042679397e40f3d2cb4b8F7D30"
+      abi: UniswapV2Pair
+      startBlock: 1518674 
+    mapping:
+      kind: ethereum/events
+      apiVersion: 0.0.5
+      language: wasm/assemblyscript
+      entities:
+        - TokenSushiTrade
+      abis:
+        - name: UniswapV2Pair
+          file: ./abis/UniswapV2Pair.json
+      eventHandlers:
+        - event: Swap(indexed address,uint256,uint256,uint256,uint256,indexed address)
+          handler: handlegDAISushiTrade
+        
+      file: ./src/mapping.ts 
+
+  - kind: ethereum
+    name: CToken
+    network: arbitrum-one
+    source:
+      address: "0x8e15a22853A0A60a0FBB0d875055A8E66cff0235"
+      abi: ctoken
+      startBlock: 1338448
+    mapping:
+      kind: ethereum/events
+      apiVersion: 0.0.5
+      language: wasm/assemblyscript
+      entities:
+        - Bamm
+      abis:
+        - name: ctoken
+          file: ./abis/ctoken.json
+      eventHandlers:
+        - event: Redeem(address,uint256,uint256)
+          handler: handleCTokenRedeem
+        
+      file: ./src/mapping.ts

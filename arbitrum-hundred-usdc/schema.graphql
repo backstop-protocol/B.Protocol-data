@@ -1,0 +1,34 @@
+type Bamm @entity {
+  id: ID!
+  TVL: BigInt!
+  totalLiquidations: BigInt!
+  collateralImbalance: BigInt!
+  bammSupply: BigInt!
+}
+
+type LiquidationEvent @entity {
+  id: ID!
+  debtAmount: BigInt!
+  collateralAmount: BigInt!
+  blockNumber: BigInt!
+  bammId: String!
+  bammTvl: BigInt!
+  spId: String!
+  spTvl: BigInt!
+
+  date: BigInt!
+}
+
+type TokenSushiTrade @entity {
+  id: ID!
+  token2EthPrice: BigInt!
+  token2UsdPrice: BigInt!
+}
+
+type BammHour @entity {
+  id: ID!
+  liquidations: BigInt!
+  USDTVL: BigInt!
+  collateralUSD: BigInt!
+  LPTokenValue: BigInt!
+}
