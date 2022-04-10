@@ -57,6 +57,7 @@ export function handleLiquidationCall(call: LiquidateBorrowCall): void {
   liquidation.debtAmount = call.inputs.amount
   liquidation.txHash = call.transaction.hash.toHexString()
   liquidation.date = call.block.timestamp
+  liquidation.bammId = bammId
   liquidation.save()
 
 

@@ -7,6 +7,7 @@ type Bamm @entity {
 
 type LiquidationEvent @entity {
   id: ID!
+  bammId: String!
   debtAmount: BigInt!
   collateralAmount: BigInt!
   txHash: String!
