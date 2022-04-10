@@ -24,6 +24,9 @@ type LiquidationEvent @entity {
   spTvl: BigInt!
 
   date: BigInt!
+
+  spDebtAmount: BigInt!
+  spCollateralAmount: BigInt!
 }
 
 type TokenSushiTrade @entity {

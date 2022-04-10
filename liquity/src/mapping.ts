@@ -117,7 +117,7 @@ function checkForSpLiquidation (event: Transfer, bammAddress: string, spAddress:
 
 function tryToSubtractLiquidationFromBamm(event: ethereum.Event, liq: LiquidationEvent): void {
 
-  if(!liq.bammTvl || !liq.debtAmount){
+  if(!liq.bammTvl || !liq.spDebtAmount){
     return //exit
   }
   // sp total liquidations
@@ -127,13 +127,16 @@ function tryToSubtractLiquidationFromBamm(event: ethereum.Event, liq: Liquidatio
     sp.TVL = BigInt.fromString("0")
     sp.totalLiquidations = BigInt.fromString("0")
   }
-  sp.totalLiquidations = sp.totalLiquidations.plus(liq.debtAmount)
+  sp.totalLiquidations = sp.totalLiquidations.plus(liq.spDebtAmount)
   sp.save()
   if(liq.spTvl.gt(zero)){ // no SP TVL no BAMM TVL
     // bamm total liquidations 
-    const bammLiqSize = liq.debtAmount.times(liq.bammTvl).div(liq.spTvl)
-    const bammImbSize = liq.collateralAmount.times(liq.bammTvl).div(liq.spTvl)
-
+    const bammLiqSize = liq.spDebtAmount.times(liq.bammTvl).div(liq.spTvl)
+    const bammImbSize = liq.spCollateralAmount.times(liq.bammTvl).div(liq.spTvl)
+    
+    liq.debtAmount = bammLiqSize
+    liq.collateralAmount = bammImbSize
+    liq.save()
     let bamm = getBamm(liq.bammId)
     bamm.TVL = bamm.TVL.minus(bammLiqSize)
     bamm.totalLiquidations = bamm.totalLiquidations.plus(bammLiqSize)
@@ -155,8 +158,8 @@ export function handleLiquidation(event: Liquidation): void {
   if(!liq){
     liq = new LiquidationEvent(txHash)
   }
-  liq.debtAmount = event.params._liquidatedDebt
-  liq.collateralAmount = event.params._liquidatedColl
+  liq.spDebtAmount = event.params._liquidatedDebt
+  liq.spCollateralAmount = event.params._liquidatedColl
   liq.save()
   tryToSubtractLiquidationFromBamm(event, liq)
 }
