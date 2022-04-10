@@ -134,8 +134,8 @@ function tryToSubtractLiquidationFromBamm(event: ethereum.Event, liq: Liquidatio
     const bammLiqSize = liq.spDebtAmount.times(liq.bammTvl).div(liq.spTvl)
     const bammImbSize = liq.spCollateralAmount.times(liq.bammTvl).div(liq.spTvl)
     
-    liq.debtAmount = bammLiqSize
-    liq.collateralAmount = bammImbSize
+    liq.debtAmount = liq.debtAmount.plus(bammLiqSize)
+    liq.collateralAmount = liq.collateralAmount.plus(bammImbSize)
     liq.save()
     let bamm = getBamm(liq.bammId)
     bamm.TVL = bamm.TVL.minus(bammLiqSize)
@@ -156,15 +156,13 @@ export function handleLiquidation(event: Liquidation): void {
   const txHash = event.transaction.hash.toHexString()
   let liq = LiquidationEvent.load(txHash)
   if(!liq){
-    liq = new LiquidationEvent(txHash)
+    return // exit
   }
   liq.spDebtAmount = event.params._liquidatedDebt
   liq.spCollateralAmount = event.params._liquidatedColl
   liq.save()
   tryToSubtractLiquidationFromBamm(event, liq)
 }
-
-
 
 function getTokenSushiTrade (id: string): TokenSushiTrade {
   let tokenSushiTrade = TokenSushiTrade.load(id)
