@@ -60,6 +60,7 @@ export function handleLiquidationCall(call: LiquidateBorrowCall): void {
   
   liquidation.blockNumber = call.block.number
   liquidation.debtAmount = call.inputs.amount
+  liquidation.date = call.block.timestamp
 
   liquidation.save()
 

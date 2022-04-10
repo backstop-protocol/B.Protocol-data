@@ -91,6 +91,10 @@ function checkForSpLiquidation (event: Transfer, bammAddress: string, spAddress:
   if(!liquidation){
     return // exit
   }
+  const sp = StabilityPool.load(spAddress)
+  if(!sp){
+    return // exit
+  }
   // store the tvl state into liquidationTx2TvlStateMap
   const txHash = event.transaction.hash.toHexString()
   let liq = LiquidationEvent.load(txHash)
@@ -99,10 +103,7 @@ function checkForSpLiquidation (event: Transfer, bammAddress: string, spAddress:
   }
   liq.spId = spAddress
   liq.date = event.block.timestamp
-  const sp = StabilityPool.load(spAddress)
-  if(!sp){
-    return // exit
-  }
+
   liq.spTvl = sp.TVL
   liq.bammId = bammAddress
   const bamm = Bamm.load(bammAddress)
