@@ -1,0 +1,17 @@
+{
+  "name": "b-liquity",
+  "license": "UNLICENSED",
+  "scripts": {
+    "codegen": "graph codegen",
+    "build": "graph build",
+    "deploy": "graph deploy --node https://api.thegraph.com/deploy/ yaronvel/b-liquity",
+    "create-local": "graph create --node http://localhost:8020/ yaronvel/b-liquity",
+    "remove-local": "graph remove --node http://localhost:8020/ yaronvel/b-liquity",
+    "deploy-local": "graph deploy --node http://localhost:8020/ --ipfs http://localhost:5001 yaronvel/b-liquity",
+    "deploy-hosted": "graph deploy --product hosted-service shmuel-web/bprotocol-chicken-bonds"
+  },
+  "dependencies": {
+    "@graphprotocol/graph-cli": "0.28.1",
+    "@graphprotocol/graph-ts": "0.26.0"
+  }
+}
