@@ -13,12 +13,12 @@ import {
 } from "../generated/UniswapV2Pair/UniswapV2Pair"
 import { Bamm, StabilityPool, LiquidationEvent, TokenSushiTrade, BammHour } from "../generated/schema"
 
-
 const arbitrum_vesta_gOHM_bamm = "0x0a30963A461aa4eb4252b5a06525603E49034C41".toLowerCase()
 const gOHM_sp = "0x3282dfAf0fBba4d3E771C4E5F669Cb4E14D8adb0".toLowerCase()
 const address_zero = "0x0000000000000000000000000000000000000000"
 const gOHM = "0xDBf31dF14B66535aF65AaC99C32e9eA844e14501".toLowerCase()
 const _1e18 = BigInt.fromString("1000000000000000000")
+const zero = BigInt.fromString('0')
 
 function getBamm (id: string): Bamm {
   let bamm = Bamm.load(id)
@@ -190,7 +190,10 @@ export function handlegOHMSushiTrade(event: Swap): void {
 export function handlegDAISushiTrade(event: Swap): void {
   const ethAmount = event.params.amount0In.plus(event.params.amount0Out)
   const daiAmount = event.params.amount1In.plus(event.params.amount1Out)
-
+  if(ethAmount.equals(zero)){
+    log.debug('zero trade',[])  
+    return
+  }
   const tokenSushiTrade = getTokenSushiTrade(gOHM)
 
   tokenSushiTrade.token2UsdPrice = daiAmount.times(tokenSushiTrade.token2EthPrice).div(ethAmount)
@@ -250,9 +253,7 @@ function updateHourlyData(event: ethereum.Event): void {
 
   bammHour.USDTVL = bammCollateralInUSD.plus(bammLUSD)
   bammHour.collateralUSD = bammCollateralInUSD
-  if(bamm.bammSupply.gt(BigInt.fromI32(0))) {
-    bammHour.LPTokenValue = bammHour.USDTVL.times(_1e18).div(bamm.bammSupply)
-  }
+  bammHour.LPTokenValue = bamm.bammSupply.gt(zero) ? bammHour.USDTVL.times(_1e18).div(bamm.bammSupply) : zero
 
   bammHour.save()
 }
