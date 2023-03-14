@@ -19,6 +19,7 @@ const gOHM_sp = "0x64cA46508ad4559E1fD94B3cf48f3164B4a77E42".toLowerCase()
 const address_zero = "0x0000000000000000000000000000000000000000"
 const gOHM = address_zero.toLowerCase()
 const _1e18 = BigInt.fromString("1000000000000000000")
+const zero = BigInt.fromString('0')
 
 function getBamm (id: string): Bamm {
   let bamm = Bamm.load(id)
@@ -180,7 +181,10 @@ function getTokenSushiTrade (id: string): TokenSushiTrade {
 export function handlegDAISushiTrade(event: Swap): void {
   const ethAmount = event.params.amount0In.plus(event.params.amount0Out)
   const daiAmount = event.params.amount1In.plus(event.params.amount1Out)
-
+  if(ethAmount.equals(zero)){
+    log.debug('zero trade',[])  
+    return
+  }
   const tokenSushiTrade = getTokenSushiTrade(gOHM)
 
   tokenSushiTrade.token2UsdPrice = daiAmount.times(_1e18).div(ethAmount)

@@ -19,6 +19,7 @@ const gOHM_sp = "0x6e53D20d674C27b858a005Cf4A72CFAaf4434ECB".toLowerCase()
 const address_zero = "0x0000000000000000000000000000000000000000"
 const gOHM = "0x8D9bA570D6cb60C7e3e0F31343Efe75AB8E65FB1".toLowerCase()
 const _1e18 = BigInt.fromString("1000000000000000000")
+const zero = BigInt.fromString('0')
 
 function getBamm (id: string): Bamm {
   let bamm = Bamm.load(id)
@@ -190,6 +191,11 @@ export function handlegOHMSushiTrade(event: Swap): void {
 export function handlegDAISushiTrade(event: Swap): void {
   const ethAmount = event.params.amount0In.plus(event.params.amount0Out)
   const daiAmount = event.params.amount1In.plus(event.params.amount1Out)
+
+  if(ethAmount.equals(zero)){
+    log.debug('zero trade',[])  
+    return
+  }
 
   const tokenSushiTrade = getTokenSushiTrade(gOHM)
 
