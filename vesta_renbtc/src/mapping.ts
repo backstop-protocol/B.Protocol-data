@@ -178,13 +178,15 @@ function getTokenSushiTrade (id: string): TokenSushiTrade {
 
 export function handlegOHMSushiTrade(event: Swap): void {
   const renBTCAmount = event.params.amount0In.plus(event.params.amount0Out)
-  const ethAmount = event.params.amount1In.plus(event.params.amount1Out)
-  const price = ethAmount.times(_1e18).div(renBTCAmount)
+  if(renBTCAmount.gt(zero)){
+    const ethAmount = event.params.amount1In.plus(event.params.amount1Out)
+    const price = ethAmount.times(_1e18).div(renBTCAmount)
 
-  const tokenSushiTrade = getTokenSushiTrade(gOHM)
-  tokenSushiTrade.token2EthPrice = price
-  tokenSushiTrade.save()
-  updateHourlyData(event)
+    const tokenSushiTrade = getTokenSushiTrade(gOHM)
+    tokenSushiTrade.token2EthPrice = price
+    tokenSushiTrade.save()
+    updateHourlyData(event)
+  }
 }
 
 export function handlegDAISushiTrade(event: Swap): void {
